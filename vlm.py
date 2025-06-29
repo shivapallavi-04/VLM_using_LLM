@@ -48,7 +48,7 @@ transform = transforms.Compose([
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 max_len = 24  # Maximum question length
 
-# Build answer vocabulary (unchanged from original)
+# Build answer vocabulary
 def build_vocab(texts, min_freq=1):
     from collections import Counter
     counter = Counter()
@@ -67,7 +67,7 @@ vocab_answers = build_vocab(dataframe['response'])
 answers_vocab_size = len(vocab_answers)
 idx2word_answers = {idx: word for word, idx in vocab_answers.items()}
 
-# Text to tensor for answers (unchanged)
+# Text to tensor for answers
 def text_to_tensor(text, vocab, max_len):
     tokens = ["<sos>"] + tokenizer.tokenize(text)[:max_len-2] + ["<eos>"]
     indices = [vocab.get(token, vocab["<unk>"]) for token in tokens]
@@ -112,7 +112,7 @@ train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_worker
 eval_dataset = VQADataset(eval_path, image_path, transform)
 eval_loader = DataLoader(eval_dataset, batch_size=16, shuffle=True, num_workers=4)
 
-# CNN Feature Extractor (unchanged)
+# CNN Feature Extractor
 class CNN_Feature_Extractor_pretrained(nn.Module):
     def __init__(self):
         super(CNN_Feature_Extractor_pretrained, self).__init__()
@@ -141,7 +141,7 @@ class Question_Encoder(nn.Module):
         pooled_output = outputs[1]  # Use [CLS] token embedding
         return self.fc(pooled_output)  # Shape: [batch_size, 512]
 
-# Attention (unchanged)
+# Attention 
 class Attention(nn.Module):
     def __init__(self, hidden_dim=512):
         super(Attention, self).__init__()
@@ -158,7 +158,7 @@ class Attention(nn.Module):
         context = attention_weights * combined_feat
         return context, attention_weights
 
-# Answer Decoder (unchanged)
+# Answer Decoder
 class Answer_Decoder(nn.Module):
     def __init__(self, answer_vocab_size, embedding_size=256, hidden_dim=512, k_beam=3):
         super(Answer_Decoder, self).__init__()
@@ -248,7 +248,7 @@ class VQA_Model(nn.Module):
         output = self.answer_decoder(question_feat, image_feat, answer_seq)
         return output
 
-# Training function (modified for BERT inputs)
+# Training function
 def train_model(model, train_loader, eval_loader, criterion, optimizer, best_model_path, num_epochs=10, patience=5):
     import time
     model.to(device)
@@ -302,7 +302,7 @@ def train_model(model, train_loader, eval_loader, criterion, optimizer, best_mod
                 break
     return history
 
-# BLEU score functions (unchanged)
+# BLEU score functions
 def ngram_precision(reference, candidate, n):
     from collections import Counter
     ref_ngrams = Counter([tuple(reference[i:i+n]) for i in range(len(reference)-n+1)])
@@ -345,7 +345,7 @@ criterion = nn.CrossEntropyLoss(ignore_index=1)
 optimizer = AdamW(VQA_model.parameters(), lr=1e-4, weight_decay=1e-2)
 VQA_model_history = train_model(VQA_model, train_loader, eval_loader, criterion, optimizer, '/kaggle/working/VAQ_model_bert.pth', num_epochs=50)
 
-# Test model (modified for BERT inputs)
+# Test model
 def test_model(model, question, image_path, ground_truth, idx2word):
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
